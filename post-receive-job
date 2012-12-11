@@ -1,0 +1,58 @@
+#!/bin/sh
+
+git-update-server-info
+
+emptyrev="0000000000000000000000000000000000000000"
+upstream_name="origin"
+
+echo "\033[42m---->"
+
+## Parse parameter
+if ! [ -t 0 ]; then
+  read -a ref
+fi
+
+oldrev=${ref[0]}
+newrev=${ref[1]}
+refname=${ref[2]}
+
+echo "oldrev = $oldrev"
+echo "newrev = $newrev"
+echo "refname = $refname"
+
+## Start
+case "$refname" in
+  refs/tags/*)
+    echo ">>>git push $upstream_name --tags"
+    exit 0
+    ;;
+  refs/heads/*)
+    IFS='/' read -ra REFNAME <<< "${ref[2]}"
+    branch="${REFNAME[2]}"
+    if [ "master" == "$branch" ]; then
+      echo "You are in MASTER branch"
+    fi
+
+    if [ "$emptyrev" == "$newrev" ]; then
+      if [ "master" == "$branch" ]; then
+        echo >&2 "*** You can not delete master branch"
+        exit 1
+      fi
+      echo ">>>git push $upstream_name :$branch"
+      exit 0
+    fi
+
+    if [ "$emptyrev" == "$oldrev" ]; then
+      echo "Creating new branch [$branch]"
+    fi
+
+    echo ">>>git push $upstream_name $branch"
+    exit 0
+    ;;
+  *)
+    echo >&2 "*** Unknown type of update to $refname"
+    exit 1
+    ;;
+esac
+
+echo "<----\033[0m"
