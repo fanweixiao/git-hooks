@@ -1,0 +1,26 @@
+#!/bin/sh
+
+nl=$'\n'
+input=""
+while read newref oldref refname ; do
+  input="$input$newref $oldref $refname$nl"
+done
+
+color_start="\033[42m"
+color_end="\033[0m"
+
+# way 1
+echo "$color_start[RUN] post-receive-three$color_end"
+echo "$input" | hooks/post-receive-three
+echo "$color_start[DONE] post-receive-three$color_end"
+
+# way 2
+FILE="`mktemp -t cc`"
+cat - > "$FILE"
+for i in `ls hooks/post-receive-job-* 2>/dev/null`; do
+  echo "$color_start[RUN] $i$color_end"
+  [ -x "$i" ] && cat "$FILE" | echo "$input" | "$i"
+  echo "$color_start[DONE] $i$color_end"
+  echo ""
+done
+rm "$FILE"
