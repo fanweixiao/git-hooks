@@ -5,7 +5,7 @@ git-update-server-info
 emptyrev="0000000000000000000000000000000000000000"
 upstream_name="origin"
 
-echo "\033[42m---->"
+echo -e "\033[42m---->"
 
 ## Parse parameter
 if ! [ -t 0 ]; then
@@ -55,4 +55,4 @@ case "$refname" in
     ;;
 esac
 
-echo "<----\033[0m"
+echo -e "<----\033[0m"

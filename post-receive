@@ -10,17 +10,17 @@ color_start="\033[42m"
 color_end="\033[0m"
 
 # way 1: run script w/ name
-echo "$color_start[RUN] post-receive-three$color_end"
+echo -e "$color_start[RUN] post-receive-three$color_end"
 echo "$input" | hooks/post-receive-three
-echo "$color_start[DONE] post-receive-three$color_end"
+echo -e "$color_start[DONE] post-receive-three$color_end"
 
 # way 2: run scripts w/ given pattern
 FILE="`mktemp -t cc`"
 cat - > "$FILE"
 for i in `ls hooks/post-receive-job-* 2>/dev/null`; do
-  echo "$color_start[RUN] $i$color_end"
+  echo -e "$color_start[RUN] $i$color_end"
   [ -x "$i" ] && cat "$FILE" | echo "$input" | "$i"
-  echo "$color_start[DONE] $i$color_end"
+  echo -e  "$color_start[DONE] $i$color_end"
   echo ""
 done
 rm "$FILE"
