@@ -1,14 +1,41 @@
-#!/bin/sh
+#!/bin/bash
+
+# if repos file existed, read it, which contains all repos will be operated
+if [ -f hooks/repos ]; then
+  . hooks/repos
+else
+  REPOS=( origin )
+fi
+
+# die
+die (){
+  s=$1 #status code
+  shift
+  echo >&2 "\033[41m$*\033[0m"
+  exit "$s"
+}
+
+# run
+run (){
+  cmd_pattern=$1
+  len=${#REPOS[*]}
+  i=0
+  while [ $i -lt $len ]; do
+    cmd=${cmd_pattern//\{\}/${REPOS[$i]}}
+    echo -e "$color_start+++ $cmd$color_end"
+    $cmd
+    i=$((i+1))
+  done
+}
 
 git-update-server-info
 
 emptyrev="0000000000000000000000000000000000000000"
-upstream_name="origin"
 
 color_start="\033[45m"
 color_end="\033[0m"
 
-## Parse parameter
+# Parse parameter, git will send oldrev, newrev, refname value
 if ! [ -t 0 ]; then
   read -a ref
 fi
@@ -22,15 +49,15 @@ refname=${ref[2]}
 #echo "refname = $refname"
 
 echo -e "$color_start--------------------------------------------------$color_end"
-echo -e "$color_start--- post-receive hook triggered,               ---$color_end"
+echo -e "$color_start--- post-receive hook triggered, by C.C. Dec 2012 $color_end"
 echo -e "$color_start--------------------------------------------------$color_end"
 echo ""
 
 ## Start
 case "$refname" in
   refs/tags/*)
-    echo -e "$color_start>>> Pushing tags to [$upstream_name]$color_end"
-    git push $upstream_name --tags
+    echo -e "$color_start>>> Pushing tags to upstream$color_end"
+    run "git push {} --tags"
     echo -e "$color_start>>>all done<<<$color_end"
     exit 0
     ;;
@@ -41,28 +68,29 @@ case "$refname" in
       echo -e "$color_start*(MASTER)$color_end"
     fi
 
-    if [ "$emptyrev" == "$newrev" ]; then
-      if [ "master" == "$branch" ]; then
-        echo -e >&2 "$color_start[EE] You can not delete master branch$color_end"
-        exit 1
+    if [ "$emptyrev" == "$newrev" ]; then # deleting branch
+      if [ "master" == "$branch" ]; then  # don't delete master branch
+        die 1 "$color_start[EE] You can not delete master branch$color_end"
       fi
-      echo -e "$color_start>>> Deleting branch($branch) to [$upstream_name]$color_end"
-      git push $upstream_name :$branch
+      #can delete other branches
+      echo -e "$color_start>>> Deleting branch($branch) to upstream$color_end"
+      run "git push {} :$branch"
       echo -e "$color_start>>>all done<<<$color_end"
       exit 0
     fi
 
+    # creating new branch
     if [ "$emptyrev" == "$oldrev" ]; then
       echo -e "$color_start>>>Creating new branch [$branch]$color_end"
     fi
 
-    echo -e "$color_start>>> Pushing branch($branch) to [$upstream_name]$color_end"
-    git push $upstream_name $branch
+    # pushing updates
+    echo -e "$color_start>>> Pushing branch($branch) to upstream$color_end"
+    run "git push {} $branch"
     echo -e "$color_start>>>all done<<<$color_end"
     exit 0
     ;;
   *)
-    echo >&2 "*** Unknown type of update to $refname"
-    exit 1
+    die 1 "$color_start*** Unknown type of update to $refname$color_end"
     ;;
 esac

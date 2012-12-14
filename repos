@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Interators for all related repos
+REPOS=( origin redmine )
